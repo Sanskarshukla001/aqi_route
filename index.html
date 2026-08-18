@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PATH - Air Quality & Health Exposure Route Engine</title>
+  <meta name="description" content="Real-time route air quality analyzer, inhaled PM2.5 dose calculator, and clean corridor path finder.">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="styles.css">
+  
+  <!-- Leaflet Interactive Map (100% Free, OpenSource, No API Key) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="brand">
+        <div class="brand-icon">🛣️</div>
+        <div>
+          <h1 class="brand-title">PATH</h1>
+          <p class="brand-subtitle">Air Quality & Inhaled Dose Exposure Algorithm Engine</p>
+        </div>
+      </div>
+      <div class="badge-live">
+        <span class="pulse-dot"></span> Open-Meteo EPA AQI Engine Active
+      </div>
+    </header>
+
+    <!-- Main Grid -->
+    <div class="main-grid">
+      
+      <!-- Input Panel -->
+      <div class="glass-card">
+        <h2 class="card-title">📍 Route & Risk Parameters</h2>
+
+        <!-- Origin Input -->
+        <div class="form-group">
+          <label class="form-label" for="start-input">Origin Location</label>
+          <div class="input-wrapper">
+            <span class="input-icon">🟢</span>
+            <input type="text" id="start-input" class="form-input" value="London Eye" placeholder="e.g. London, Times Square, Paris">
+          </div>
+        </div>
+
+        <!-- Destination Input -->
+        <div class="form-group">
+          <label class="form-label" for="dest-input">Destination Location</label>
+          <div class="input-wrapper">
+            <span class="input-icon">🚩</span>
+            <input type="text" id="dest-input" class="form-input" value="Hyde Park" placeholder="e.g. Oxford, Central Park, Eiffel Tower">
+          </div>
+        </div>
+
+        <!-- Preset Chips -->
+        <div class="form-group">
+          <label class="form-label">Quick Test Routes</label>
+          <div class="presets-container">
+            <button class="preset-chip" data-start="TIT College, Bhopal" data-dest="Rani Kamlapati, Bhopal">TIT College → Rani Kamlapati, Bhopal</button>
+            <button class="preset-chip" data-start="London Eye" data-dest="Hyde Park">London Eye → Hyde Park</button>
+            <button class="preset-chip" data-start="Times Square, NY" data-dest="Central Park, NY">Times Square → Central Park</button>
+            <button class="preset-chip" data-start="Connaught Place, Delhi" data-dest="India Gate, Delhi">Delhi CP → India Gate</button>
+          </div>
+        </div>
+
+        <!-- Activity Selection -->
+        <div class="form-group">
+          <label class="form-label">Activity Mode</label>
+          <div class="activity-grid">
+            <button class="activity-btn active" data-activity="WALK">
+              <span class="activity-icon">🚶</span>
+              <span class="activity-name">Walk (4.8 km/h)</span>
+            </button>
+            <button class="activity-btn" data-activity="JOG">
+              <span class="activity-icon">🏃</span>
+              <span class="activity-name">Jog (8.0 km/h)</span>
+            </button>
+            <button class="activity-btn" data-activity="CYCLE">
+              <span class="activity-icon">🚴</span>
+              <span class="activity-name">Cycle (15 km/h)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- User Health Profile Escalation Toggles -->
+        <div class="form-group">
+          <label class="form-label">User Health Profile Flags</label>
+          <div class="profile-chips">
+            <button class="chip-toggle" data-profile="hasAsthma">🫁 Asthma Profile</button>
+            <button class="chip-toggle" data-profile="hasRespiratoryCondition">🫀 Respiratory</button>
+            <button class="chip-toggle" data-profile="isElderly">👴 Senior</button>
+            <button class="chip-toggle" data-profile="hasChildren">👶 Children</button>
+            <button class="chip-toggle" data-profile="isOutdoorWorker">👷 Outdoor Worker</button>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <button id="btn-analyze" class="btn-analyze">
+          ⚡ Execute Path Risk Algorithm
+        </button>
+      </div>
+
+      <!-- Results Panel -->
+      <div class="glass-card">
+        
+        <!-- Loading State -->
+        <div id="loading-overlay" class="loading-overlay">
+          <div class="spinner"></div>
+          <p style="color: var(--text-secondary)">Sampling micro-segment AQI & computing inhaled particulate dose...</p>
+        </div>
+
+        <!-- Results Content -->
+        <div id="results-content" class="results-container">
+          
+          <!-- Verdict Banner -->
+          <div id="verdict-banner" class="verdict-banner">
+            <div class="verdict-header">
+              <span class="verdict-tag">PATH RISK VERDICT</span>
+              <span id="risk-badge" class="risk-badge">Good</span>
+            </div>
+            <h2 id="verdict-title" class="verdict-title">Excellent route conditions!</h2>
+          </div>
+
+          <!-- Key Metrics Grid -->
+          <div class="metrics-row">
+            <div class="metric-card">
+              <span class="metric-label">Avg EPA AQI</span>
+              <span id="val-avg-aqi" class="metric-value">--</span>
+              <span class="metric-unit">US EPA Scale</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-label">Est Duration</span>
+              <span id="val-duration" class="metric-value">--</span>
+              <span class="metric-unit">minutes</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-label">Distance</span>
+              <span id="val-distance" class="metric-value">--</span>
+              <span class="metric-unit">km</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-label">Inhaled PM2.5</span>
+              <span id="val-inhaled" class="metric-value">--</span>
+              <span class="metric-unit">µg particulate</span>
+            </div>
+          </div>
+
+          <!-- Live Interactive Map -->
+          <div>
+            <h3 class="card-title" style="margin-bottom: 0.5rem">🗺️ Live Interactive Route Map</h3>
+            <div id="map-container" class="map-container"></div>
+          </div>
+
+          <!-- Route Pollution Elevation Profile Chart -->
+          <div>
+            <h3 class="card-title" style="margin-bottom: 0.5rem">📈 Route Air Quality Elevation Graph</h3>
+            <canvas id="route-canvas" class="route-canvas-container"></canvas>
+          </div>
+
+          <!-- Waypoint Breakdown -->
+          <div>
+            <h3 class="card-title">📍 Segment Pollution Breakdown</h3>
+            <div id="segment-timeline" class="segment-timeline">
+              <!-- Waypoint items dynamically injected -->
+            </div>
+          </div>
+
+          <!-- Air Quality Clean Route Alternative -->
+          <div id="alt-route-box" class="alt-route-box">
+            <!-- Dynamic Alt Route info -->
+          </div>
+
+          <!-- Actionable Advisories -->
+          <div>
+            <h3 class="card-title">💡 Personalized Health Advisories</h3>
+            <ul id="recs-list" class="recs-list">
+              <!-- Dynamic recommendations -->
+            </ul>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

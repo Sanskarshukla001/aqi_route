@@ -1,0 +1,21 @@
+{
+  "name": "path-air-quality-algorithm",
+  "version": "1.0.0",
+  "description": "Path Air Quality Route & Health Exposure Risk Algorithm Module",
+  "type": "module",
+  "main": "path_risk_algorithm.js",
+  "scripts": {
+    "start": "node path_cli.js",
+    "test": "node path_cli.js \"New York\" \"Central Park\" WALK"
+  },
+  "keywords": [
+    "air-quality",
+    "aqi",
+    "route-risk",
+    "pm2.5",
+    "haversine",
+    "health-exposure"
+  ],
+  "author": "Antigravity AI",
+  "license": "MIT"
+}
